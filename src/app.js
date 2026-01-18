@@ -12,7 +12,13 @@ const app = express();
 app.use(express.json({ limit: '50mb' })); // Increased limit for large playlist/album data
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
 app.use(cors({
-    origin: ['http://localhost:5173', 'http://localhost:3000'],
+    origin: [
+        'http://localhost:5173',
+        'http://localhost:3000',
+        'https://tunetrek-frontend.vercel.app', // Production Frontend
+        'https://tunetrek-frontend-ashok-kumars-projects.vercel.app', // Vercel Project URL
+        process.env.FRONTEND_URL // Allow env variable override
+    ].filter(Boolean),
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization']
