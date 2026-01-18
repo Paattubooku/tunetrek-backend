@@ -173,12 +173,12 @@ exports.getRadioNew = async (req, res) => {
             return res.status(400).send({ error: 'Invalid parameters. Provide either query or name and l.' });
         }
 
-        // Using simple makeApiRequest here as original code used it (no puppeteer in getRadioNew in original code)
-        const response = await makeApiRequest(url);
+        // Using robust fetchAndParseRadioParams to handle potential malformed JSON
+        const response = await fetchAndParseRadioParams(url);
         const stationId = response.stationid;
 
         const url1 = `${JIOSAAVN_API_BASE_URL}?__call=webradio.getSong&stationid=${stationId}&k=20&next=0&api_version=4&_format=json&_marker=0&ctx=iphoneapp`;
-        const result = await makeApiRequest(url1);
+        const result = await fetchAndParseRadioParams(url1);
 
         let allResults = {
             stationId,
@@ -201,7 +201,7 @@ exports.getMoreRadioNew = async (req, res) => {
     try {
         const { id, k } = req.params;
         const url = `${JIOSAAVN_API_BASE_URL}?__call=webradio.getSong&stationid=${id}&k=${k}&next=0&api_version=4&_format=json&_marker=0&ctx=iphoneapp`;
-        const result = await makeApiRequest(url);
+        const result = await fetchAndParseRadioParams(url);
 
         let allResults = [];
         if (k != 1) {

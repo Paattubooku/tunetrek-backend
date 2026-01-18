@@ -1,0 +1,9 @@
+Starting Test
+--- Test 1: India Cookies ---
+Fetching: https://www.jiosaavn.com/api.php?__call=webradio.createStation&pid=Nc-DXXKk&_format=json&_marker=0&api_version=4&ctx=iphoneapp
+Status: 200
+Result 1 StationID: 89HfdCMmJkOvfdxD1wX8Rxxf,EudtXUg1-u-kw0DHXaV1lEuxP3Xdg__
+--- Test 2: Basic Cookies ---
+Fetching: https://www.jiosaavn.com/api.php?__call=webradio.createStation&pid=Nc-DXXKk&_format=json&_marker=0&api_version=4&ctx=iphoneapp
+Status: 200
+Result 2 StationID: fLXc089yZVs-H8CBpGvB8IisrDTm7JhjU1g9ksBX4Ea,nbHt0PbiiA__
