@@ -29,19 +29,32 @@ const fetchAndParseRadioParams = async (url) => {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36',
     };
 
-    const response = await fetch(url, { headers });
-    const text = await response.text();
-
     try {
-        return JSON.parse(text);
-    } catch (e) {
-        // Apply the specific fix from original code if standard parse fails
-        // Original fix: rawContent.replaceAll('From \"','From \\\"').replaceAll('\")','\\\")');
-        // then unescape double backslashes
-        console.warn("JSON Parse failed, attempting regex fix...");
-        const fix = text.replaceAll('From \"', 'From \\\"').replaceAll('\")', '\\\")');
-        const unescapedInput = fix.replace(/\\\\"/g, '"').replace(/\\\\/g, '\\');
-        return JSON.parse(unescapedInput);
+        const response = await fetch(url, { headers });
+        if (!response.ok) {
+            throw new Error(`Upstream API Error: ${response.status} ${response.statusText}`);
+        }
+        const text = await response.text();
+
+        try {
+            return JSON.parse(text);
+        } catch (e) {
+            // Apply the specific fix from original code if standard parse fails
+            // Original fix: rawContent.replaceAll('From \"','From \\\"').replaceAll('\")','\\\")');
+            // then unescape double backslashes
+            console.warn("JSON Parse failed, attempting regex fix...");
+            try {
+                const fix = text.replaceAll('From \"', 'From \\\"').replaceAll('\")', '\\\")');
+                const unescapedInput = fix.replace(/\\\\"/g, '"').replace(/\\\\/g, '\\');
+                return JSON.parse(unescapedInput);
+            } catch (fixErr) {
+                // If fix fails, throw error with snippet of content to debug Vercel issues
+                throw new Error(`JSON Parse Failed after fix. Response preview: ${text.substring(0, 300)}`);
+            }
+        }
+    } catch (err) {
+        console.error(`Fetch/Parse Error for ${url}:`, err);
+        throw err;
     }
 };
 
