@@ -15,6 +15,7 @@ app.use(cors({
     origin: [
         'http://localhost:5173',
         'http://localhost:3000',
+        'https://mserver-pi.vercel.app/',
         'https://tunetrek-frontend.vercel.app', // Production Frontend
         'https://tunetrek-frontend-ashok-kumars-projects.vercel.app', // Vercel Project URL
         process.env.FRONTEND_URL // Allow env variable override
