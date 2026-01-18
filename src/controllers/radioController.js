@@ -188,19 +188,45 @@ exports.getRadioNew = async (req, res) => {
 
         // Using robust fetchAndParseRadioParams to handle potential malformed JSON
         const response = await fetchAndParseRadioParams(url);
+
+        // Debug logging for Vercel
+        console.log(`[getRadioNew] Create Station Response:`, JSON.stringify(response));
+
         const stationId = response.stationid;
+
+        if (!stationId) {
+            throw new Error(`Failed to create station. Response: ${JSON.stringify(response)}`);
+        }
 
         const url1 = `${JIOSAAVN_API_BASE_URL}?__call=webradio.getSong&stationid=${stationId}&k=20&next=0&api_version=4&_format=json&_marker=0&ctx=iphoneapp`;
         const result = await fetchAndParseRadioParams(url1);
+
+        // Debug logging for Vercel
+        console.log(`[getRadioNew] Get Songs Response keys:`, Object.keys(result));
 
         let allResults = {
             stationId,
             songs: []
         };
 
+        // JioSaavn API sometimes returns an object with numeric keys for songs, OR an array, OR just a single object.
+        // The original logic: Object.keys(result).forEach...
+        // If result itself IS an array (unlikely for this specific call but possible), logic still holds if we treat keys as indices.
+        // However, if result is empty or error, we should handle it.
+
+        if (result.error) {
+            throw new Error(`Upstream Error in getSong: ${JSON.stringify(result)}`);
+        }
+
         Object.keys(result).forEach(key => {
-            if (key !== "stationid" && result[key].song) {
+            // Check if checking key is not stationid AND the value at key has a 'song' property
+            // OR if the value itself IS the song (sometimes happens in weird edge cases)
+            // Original logic checks result[key].song
+            if (key !== "stationid" && result[key] && result[key].song) {
                 allResults.songs.push(result[key].song);
+            } else if (key !== "stationid" && result[key] && result[key].id && result[key].title) {
+                // Fallback: maybe the object IS the song? Unlikely for webradio.getSong but good for robustness
+                allResults.songs.push(result[key]);
             }
         });
 
