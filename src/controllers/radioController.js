@@ -16,7 +16,7 @@ const fetchAndParseRadioParams = async (url) => {
         'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7',
         'Accept-Encoding': 'gzip, deflate, br, zstd',
         'Accept-Language': 'en-US,en;q=0.9',
-        'Cookie': `gdpr_acceptance=true; DL=english; L=English; geo=49.206.118.191%2CIN%2CTamil%20Nadu%2CCoimbatore%2C641018; mm_latlong=11.0142%2C76.9941; AKA_A2=A;`,
+        'Cookie': `gdpr_acceptance=true; DL=english; L=English; AKA_A2=A;`,
         'Priority': 'u=0, i',
         'Sec-CH-UA': '"Chromium";v="130", "Google Chrome";v="130", "Not?A_Brand";v="99"',
         'Sec-CH-UA-Mobile': '?0',
@@ -176,9 +176,9 @@ exports.getRadioNew = async (req, res) => {
         let url;
         // Logic from original code
         if (query && !name && !l) {
-            url = `${JIOSAAVN_API_BASE_URL}?__call=webradio.createStation&pid=${query}&_format=json&_marker=0&api_version=${API_VERSION}&ctx=iphoneapp`;
+            url = `${JIOSAAVN_API_BASE_URL}?__call=webradio.createStation&pid=${query}&_format=json&_marker=0&api_version=${API_VERSION}&ctx=web6dot0`;
         } else if (!query && name && l) {
-            url = `${JIOSAAVN_API_BASE_URL}?name=${name}&api_version=${API_VERSION}&_format=json&_marker=0&ctx=iphoneapp&__call=webradio.createFeaturedStation&language=${l}`;
+            url = `${JIOSAAVN_API_BASE_URL}?name=${name}&api_version=${API_VERSION}&_format=json&_marker=0&ctx=web6dot0&__call=webradio.createFeaturedStation&language=${l}`;
         } else if (!query && name && language && !l) {
             // Original hardcoded logic? preserved as is
             url = `https://www.jiosaavn.com/api.php?language=tamil,english&pid=&query=Ilaiyaraaja&name=Ilaiyaraaja&mode=&artistid=&api_version=4&_format=json&_marker=0&ctx=web6dot0&__call=webradio.createArtistStation`;
@@ -198,7 +198,7 @@ exports.getRadioNew = async (req, res) => {
             throw new Error(`Failed to create station. Response: ${JSON.stringify(response)}`);
         }
 
-        const url1 = `${JIOSAAVN_API_BASE_URL}?__call=webradio.getSong&stationid=${stationId}&k=20&next=0&api_version=4&_format=json&_marker=0&ctx=iphoneapp`;
+        const url1 = `${JIOSAAVN_API_BASE_URL}?__call=webradio.getSong&stationid=${stationId}&k=20&next=0&api_version=4&_format=json&_marker=0&ctx=web6dot0`;
         const result = await fetchAndParseRadioParams(url1);
 
         // Debug logging for Vercel
