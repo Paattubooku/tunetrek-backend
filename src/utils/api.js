@@ -13,13 +13,19 @@ const makeApiRequest = async (url, language = "English", location = null) => {
         const geo = location?.geo || defaultGeo;
         const latlong = location?.latlong || defaultLatLong;
 
+        // Normalize language to lowercase
+        const normalizedLanguage = language.toLowerCase();
+
+        const cookieString = `gdpr_acceptance=true; DL=english; L=${normalizedLanguage}; geo=${geo}; mm_latlong=${latlong}; AKA_A2=A;`;
+        console.log('[API] Sending cookie to JioSaavn:', cookieString);
+
         const response = await fetch(url, {
             headers: {
                 Accept:
                     "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7",
                 "Accept-Encoding": "gzip, deflate, br, zstd",
                 "Accept-Language": "en-US,en;q=0.9",
-                Cookie: `gdpr_acceptance=true; DL=english; L=${language}; geo=${geo}; mm_latlong=${latlong}; AKA_A2=A;`,
+                Cookie: cookieString,
                 Priority: "u=0, i",
                 "Sec-CH-UA":
                     '"Chromium";v="130", "Google Chrome";v="130", "Not?A_Brand";v="99"',

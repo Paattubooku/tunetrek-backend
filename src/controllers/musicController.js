@@ -1,11 +1,11 @@
 const { makeApiRequest } = require("../utils/api");
 const { createDownloadLinks } = require("../utils/crypto");
 const { JIOSAAVN_API_BASE_URL, CTX, API_VERSION } = require("../config");
-const { getLocationFromIP, formatLocationForCookie } = require("../utils/ipLocation");
+const { getLocationFromIP, formatLocationForCookie, getLanguagesForLocation } = require("../utils/ipLocation");
 
 exports.getHomePage = async (req, res) => {
     try {
-        const { language = "Tamil,English" } = req.query;
+        let { language } = req.query;
 
         // Get user's real IP address (works with Vercel, Cloudflare, etc.)
         const userIP = req.headers['x-forwarded-for']?.split(',')[0]?.trim() ||
@@ -13,9 +13,24 @@ exports.getHomePage = async (req, res) => {
             req.socket?.remoteAddress ||
             '0.0.0.0';
 
+        console.log('[Home] Detected user IP:', userIP);
+
         // Get location from IP
         const locationData = await getLocationFromIP(userIP);
         const location = formatLocationForCookie(locationData);
+
+        console.log('[Home] Formatted cookie:', location);
+
+        // If language is default or not provided, try to detect from location
+        // The frontend currently defaults to "Tamil,English" if no selection.
+        // We can check if it matches the default or simple fallback.
+        if (!language || language.toLowerCase() === "tamil,english" || language.toLowerCase() === "english") {
+            const detectedLangs = getLanguagesForLocation(locationData);
+            if (detectedLangs) {
+                console.log(`[Home] Auto-switching language from '${language}' to detected '${detectedLangs}' based on location`);
+                language = detectedLangs;
+            }
+        }
 
         const url = `${JIOSAAVN_API_BASE_URL}?__call=webapi.getLaunchData&api_version=${API_VERSION}&_format=json&_marker=0&ctx=${CTX}`;
 
@@ -289,7 +304,8 @@ exports.getPlaylistDetails = async (req, res) => {
 exports.artistMoreDetails = async (req, res) => {
     try {
         const { token } = req.params;
-        const { language = "tamil,english", p = 0, sub_type = "", more = false } = req.query;
+        let { language, p = 0, sub_type = "", more = false } = req.query;
+        if (!language) language = "tamil,english";
 
         // Get user's real IP address
         const userIP = req.headers['x-forwarded-for']?.split(',')[0]?.trim() ||
@@ -300,6 +316,14 @@ exports.artistMoreDetails = async (req, res) => {
         // Get location from IP
         const locationData = await getLocationFromIP(userIP);
         const location = formatLocationForCookie(locationData);
+
+        // Auto-detect language if default
+        if (language.toLowerCase() === "tamil,english" || language.toLowerCase() === "english") {
+            const detectedLangs = getLanguagesForLocation(locationData);
+            if (detectedLangs) {
+                language = detectedLangs;
+            }
+        }
 
         // Build the URL based on parameters
         let url;
