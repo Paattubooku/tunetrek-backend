@@ -8,6 +8,7 @@ router.get("/", musicController.getHomePage);
 router.get("/details/:id/:type/:p?/:n?", musicController.getDetails);
 router.get("/otherDetails/:title/:source/:data", musicController.getOtherDetails);
 router.get("/topsearch", musicController.getTopSearch);
+router.get("/top-searches", musicController.getTopSearches);
 router.get("/search", musicController.search);
 router.get("/search/songs/:query", musicController.searchSongs);
 router.get("/song/:id", musicController.getSongDetails);

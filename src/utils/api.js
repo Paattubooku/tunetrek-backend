@@ -53,6 +53,73 @@ const makeApiRequest = async (url, language = "English", location = null) => {
     }
 };
 
+const { JIOSAAVN_STATS_BASE_URL } = require("../config");
+
+// Helper to generate a random device ID
+const generateDeviceId = () => {
+    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
+        var r = Math.random() * 16 | 0, v = c == 'x' ? r : (r & 0x3 | 0x8);
+        return v.toString(16);
+    });
+};
+
+const sendStatsEvent = async (eventName, params = {}, locationData = null) => {
+    try {
+        const timestamp = Date.now();
+        const deviceId = generateDeviceId(); // In a real app, this should be persistent per user
+
+        // Default location if not provided
+        const city = locationData?.city || "Chennai";
+        const state = locationData?.region || "Tamil Nadu"; // 'region' is standard in ip-api, mapping to state
+        const country = locationData?.countryCode || "IN";
+
+        const statsPayload = [{
+            "event_name": eventName,
+            "cc": country,
+            "state": state,
+            "city": city,
+            "ctx": "web6dot0",
+            "language": "english", // Defaulting, maybe pass from params
+            "app_language": "NULL",
+            "mobile_network": "NULL",
+            "network_type": "4g",
+            "login_mode": "Web",
+            "app_version": "6.0",
+            "device_id": deviceId, // We generate a random one for now
+            "ts": timestamp.toString(),
+            "tz": "Asia/Calcutta",
+            "login_state": false,
+            "promode": "NULL",
+            ...params // Spread specific params like search_query, search_duration_in_ms
+        }];
+
+        const formBody = new URLSearchParams();
+        formBody.append('batch_params', JSON.stringify(statsPayload));
+
+        // Using no-cors mode might be needed if calling from browser, 
+        // but here we are server-side, so we can just call it.
+        // However, JioSaavn might check referrer or origin. We mock them in headers.
+
+        await fetch(JIOSAAVN_STATS_BASE_URL, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+                'User-Agent': "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/110.0.0.0 Safari/537.36",
+                'Origin': 'https://www.jiosaavn.com',
+                'Referer': 'https://www.jiosaavn.com/'
+            },
+            body: formBody
+        });
+
+        // We generally fire and forget stats, so we don't return anything critical
+        console.log(`[Stats] Sent ${eventName}`);
+    } catch (error) {
+        console.error(`[Stats Error] Failed to send ${eventName}:`, error.message);
+        // Don't throw, stats failure shouldn't break the app
+    }
+};
+
 module.exports = {
-    makeApiRequest
+    makeApiRequest,
+    sendStatsEvent
 };
