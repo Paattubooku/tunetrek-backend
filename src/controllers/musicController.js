@@ -1,4 +1,4 @@
-const { makeApiRequest, sendStatsEvent } = require("../utils/api");
+const { makeApiRequest } = require("../utils/api");
 const { createDownloadLinks } = require("../utils/crypto");
 const { JIOSAAVN_API_BASE_URL, CTX, API_VERSION } = require("../config");
 const { getLocationFromIP, formatLocationForCookie, getLanguagesForLocation } = require("../utils/ipLocation");
@@ -153,24 +153,12 @@ exports.getTopSearch = async (req, res) => {
 };
 
 exports.search = async (req, res) => {
-    const startTime = Date.now();
-    let locationData = null;
     try {
         const { q: query, language = "tamil,english" } = req.query;
         if (!query) return res.status(400).json({ error: 'Query parameter is required' });
 
-        // Get user's real IP address
-        const userIP = req.headers['x-forwarded-for']?.split(',')[0]?.trim() ||
-            req.headers['x-real-ip'] ||
-            req.socket?.remoteAddress ||
-            '0.0.0.0';
-
-        // Get location from IP
-        locationData = await getLocationFromIP(userIP);
-        const location = formatLocationForCookie(locationData);
-
-        const url = `${JIOSAAVN_API_BASE_URL}?__call=autocomplete.get&ctx=${CTX}&api_version=${API_VERSION}&_format=json&_marker=0&cc=in&includeMetaTags=1&query=${encodeURIComponent(query)}`;
-        const response = await makeApiRequest(url, language, location);
+        const url = `${JIOSAAVN_API_BASE_URL}?__call=autocomplete.get&_format=json&_marker=0&cc=in&includeMetaTags=1&query=${encodeURIComponent(query)}`;
+        const response = await makeApiRequest(url, language); // Assumed makeApiRequest returns object
 
         // Filter keys
         const validKeys = ['TOPQUERY', 'ALBUMS', 'SONGS', 'PLAYLISTS', 'ARTISTS'];
@@ -193,71 +181,30 @@ exports.search = async (req, res) => {
             }, {});
 
         res.json(sortedResult);
-
-        // Log search stats
-        const duration = Date.now() - startTime;
-        sendStatsEvent("SEARCH_EVENT", {
-            search_query: query,
-            search_duration_in_ms: duration
-        }, locationData);
-
     } catch (error) {
         console.error('Error searching:', error);
         res.status(500).json({ error: 'An error occurred while fetching data' });
     }
 };
 
-exports.getTopSearches = async (req, res) => {
-    try {
-        const { language = "tamil,english" } = req.query;
-        // Get user's real IP address
-        const userIP = req.headers['x-forwarded-for']?.split(',')[0]?.trim() ||
-            req.headers['x-real-ip'] ||
-            req.socket?.remoteAddress ||
-            '0.0.0.0';
-
-        // Get location from IP
-        const locationData = await getLocationFromIP(userIP);
-        const location = formatLocationForCookie(locationData);
-
-        const url = `${JIOSAAVN_API_BASE_URL}?__call=content.getTopSearches&ctx=${CTX}&api_version=${API_VERSION}&_format=json&_marker=0`;
-        const response = await makeApiRequest(url, language, location);
-        res.json(response);
-    } catch (error) {
-        res.status(500).json({ error: "An error occurred" });
-    }
-};
-
 exports.searchSongs = async (req, res) => {
-    const startTime = Date.now();
-    let locationData = null;
     try {
         const { query } = req.params;
         const { language = "tamil,english" } = req.query;
         const targetLanguages = language.toLowerCase().split(",");
-
-        // Get user's real IP
-        const userIP = req.headers['x-forwarded-for']?.split(',')[0]?.trim() ||
-            req.headers['x-real-ip'] ||
-            req.socket?.remoteAddress ||
-            '0.0.0.0';
-
-        // Get location from IP
-        locationData = await getLocationFromIP(userIP);
-        const location = formatLocationForCookie(locationData);
 
         let page = 1;
         let allResults = [];
         const MAX_PAGES = 10; // Reduced for performance
 
         while (page <= MAX_PAGES) {
-            const url = `${JIOSAAVN_API_BASE_URL}?p=${page}&_format=json&_marker=0&api_version=${API_VERSION}&ctx=${CTX}&n=50&__call=search.getResults&q=${encodeURIComponent(query)}`;
-            // Pass language and location to API request
-            const response = await makeApiRequest(url, language, location);
+            const url = `${JIOSAAVN_API_BASE_URL}?p=${page}&_format=json&_marker=0&api_version=${API_VERSION}&ctx=wap6dot0&n=50&__call=search.getResults&q=${query}`;
+            // Pass language to API request (sets cookie)
+            const response = await makeApiRequest(url, language);
 
             if (!response.results || !Array.isArray(response.results)) break;
 
-            // Filter based on requested languages provided in search
+            // Filter based on requested languages provided in query
             const filteredSongs = response.results.filter(
                 (song) => targetLanguages.includes(song.language.toLowerCase())
             );
@@ -269,15 +216,6 @@ exports.searchSongs = async (req, res) => {
             page++;
         }
         res.json(allResults);
-
-        // Log search stats
-        const duration = Date.now() - startTime;
-        sendStatsEvent("SEARCH_EVENT", {
-            search_query: query,
-            search_duration_in_ms: duration,
-            sub_type: "songs"
-        }, locationData);
-
     } catch (error) {
         res.status(500).json({ error: error.message || "An error occurred" });
     }
@@ -296,31 +234,18 @@ exports.getSongDetails = async (req, res) => {
 };
 
 exports.searchAlbums = async (req, res) => {
-    const startTime = Date.now();
-    let locationData = null;
     try {
         const { query } = req.params;
         const { language = "tamil,english" } = req.query;
         const targetLanguages = language.toLowerCase().split(",");
-
-        // Get user's real IP
-        const userIP = req.headers['x-forwarded-for']?.split(',')[0]?.trim() ||
-            req.headers['x-real-ip'] ||
-            req.socket?.remoteAddress ||
-            '0.0.0.0';
-
-        // Get location from IP
-        locationData = await getLocationFromIP(userIP);
-        const location = formatLocationForCookie(locationData);
 
         let page = 1;
         let allResults = [];
         const MAX_PAGES = 10;
 
         while (page <= MAX_PAGES) {
-            const url = `${JIOSAAVN_API_BASE_URL}?p=${page}&_format=json&_marker=0&api_version=${API_VERSION}&ctx=${CTX}&n=50&__call=search.getAlbumResults&q=${encodeURIComponent(query)}`;
-            // Pass language and location
-            const response = await makeApiRequest(url, language, location);
+            const url = `${JIOSAAVN_API_BASE_URL}?p=${page}&_format=json&_marker=0&api_version=${API_VERSION}&ctx=wap6dot0&n=50&__call=search.getAlbumResults&q=${query}`;
+            const response = await makeApiRequest(url, language);
 
             if (!response.results || !Array.isArray(response.results)) break;
 
@@ -335,15 +260,6 @@ exports.searchAlbums = async (req, res) => {
             page++;
         }
         res.json(allResults);
-
-        // Log search stats
-        const duration = Date.now() - startTime;
-        sendStatsEvent("SEARCH_EVENT", {
-            search_query: query,
-            search_duration_in_ms: duration,
-            sub_type: "albums"
-        }, locationData);
-
     } catch (error) {
         res.status(500).json({ error: "An error occurred" });
     }
@@ -362,40 +278,12 @@ exports.getAlbumDetails = async (req, res) => {
 };
 
 exports.searchPlaylists = async (req, res) => {
-    const startTime = Date.now();
-    let locationData = null;
     try {
         const { query } = req.params;
         const { language = "tamil,english" } = req.query;
-
-        // Get user's real IP
-        const userIP = req.headers['x-forwarded-for']?.split(',')[0]?.trim() ||
-            req.headers['x-real-ip'] ||
-            req.socket?.remoteAddress ||
-            '0.0.0.0';
-
-        // Get location from IP
-        locationData = await getLocationFromIP(userIP);
-        const location = formatLocationForCookie(locationData);
-
-        const url = `${JIOSAAVN_API_BASE_URL}?__call=search.getPlaylistResults&q=${encodeURIComponent(query)}&_format=json&_marker=0&ctx=${CTX}&api_version=${API_VERSION}&p=1&n=50`;
-        // Pass language and location
-        const response = await makeApiRequest(url, language, location);
-
-        if (response.results) {
-            res.json(response.results);
-        } else {
-            res.json(response);
-        }
-
-        // Log search stats
-        const duration = Date.now() - startTime;
-        sendStatsEvent("SEARCH_EVENT", {
-            search_query: query,
-            search_duration_in_ms: duration,
-            sub_type: "playlists"
-        }, locationData);
-
+        const url = `${JIOSAAVN_API_BASE_URL}?__call=autocomplete.get&_format=json&_marker=0&cc=in&includeMetaTags=1&query=${query}`;
+        const response = await makeApiRequest(url, language);
+        res.json(response);
     } catch (error) {
         res.status(500).json({ error: "An error occurred" });
     }
