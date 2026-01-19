@@ -1,13 +1,25 @@
 const { makeApiRequest } = require("../utils/api");
 const { createDownloadLinks } = require("../utils/crypto");
 const { JIOSAAVN_API_BASE_URL, CTX, API_VERSION } = require("../config");
+const { getLocationFromIP, formatLocationForCookie } = require("../utils/ipLocation");
 
 exports.getHomePage = async (req, res) => {
     try {
         const { language = "Tamil,English" } = req.query;
+
+        // Get user's real IP address (works with Vercel, Cloudflare, etc.)
+        const userIP = req.headers['x-forwarded-for']?.split(',')[0]?.trim() ||
+            req.headers['x-real-ip'] ||
+            req.socket?.remoteAddress ||
+            '0.0.0.0';
+
+        // Get location from IP
+        const locationData = await getLocationFromIP(userIP);
+        const location = formatLocationForCookie(locationData);
+
         const url = `${JIOSAAVN_API_BASE_URL}?__call=webapi.getLaunchData&api_version=${API_VERSION}&_format=json&_marker=0&ctx=${CTX}`;
 
-        const launchData = await makeApiRequest(url, language);
+        const launchData = await makeApiRequest(url, language, location);
 
         const keysToRemove = [
             'history', 'promo:vx:data:139', 'promo:vx:data:163',
@@ -42,7 +54,7 @@ exports.getHomePage = async (req, res) => {
         );
 
         const url1 = `${JIOSAAVN_API_BASE_URL}?__call=content.getTopSearches&ctx=${CTX}&api_version=${API_VERSION}&_format=json&_marker=0`;
-        const topsearchDetails = await makeApiRequest(url1, language);
+        const topsearchDetails = await makeApiRequest(url1, language, location);
 
         const updated = Object.fromEntries(
             Object.entries(updatedObject).flatMap(([key, value]) =>
@@ -52,7 +64,20 @@ exports.getHomePage = async (req, res) => {
             )
         );
 
-        res.json(updated);
+        // Add location metadata to response
+        const response = {
+            ...updated,
+            _metadata: {
+                userLocation: {
+                    city: locationData.city,
+                    state: locationData.state,
+                    country: locationData.country,
+                    ip: locationData.ip
+                }
+            }
+        };
+
+        res.json(response);
     } catch (error) {
         res.status(500).json({ error: error.message || "An error occurred" });
     }
@@ -266,6 +291,16 @@ exports.artistMoreDetails = async (req, res) => {
         const { token } = req.params;
         const { language = "tamil,english", p = 0, sub_type = "", more = false } = req.query;
 
+        // Get user's real IP address
+        const userIP = req.headers['x-forwarded-for']?.split(',')[0]?.trim() ||
+            req.headers['x-real-ip'] ||
+            req.socket?.remoteAddress ||
+            '0.0.0.0';
+
+        // Get location from IP
+        const locationData = await getLocationFromIP(userIP);
+        const location = formatLocationForCookie(locationData);
+
         // Build the URL based on parameters
         let url;
         if (more === "true" && sub_type) {
@@ -276,7 +311,7 @@ exports.artistMoreDetails = async (req, res) => {
             url = `${JIOSAAVN_API_BASE_URL}?__call=webapi.get&token=${encodeURIComponent(token)}&type=artist&p=${p}&n_song=50&n_album=50&sub_type=&category=&sort_order=&includeMetaTags=0&ctx=${CTX}&api_version=${API_VERSION}&_format=json&_marker=0`;
         }
 
-        const artistDetails = await makeApiRequest(url, language);
+        const artistDetails = await makeApiRequest(url, language, location);
         res.json(artistDetails);
     } catch (error) {
         res.status(500).json({ error: error.message || "An error occurred" });
