@@ -261,6 +261,28 @@ exports.getPlaylistDetails = async (req, res) => {
     }
 };
 
+exports.artistMoreDetails = async (req, res) => {
+    try {
+        const { token } = req.params;
+        const { language = "tamil,english", p = 0, sub_type = "", more = false } = req.query;
+
+        // Build the URL based on parameters
+        let url;
+        if (more === "true" && sub_type) {
+            // For pagination requests (more songs or albums)
+            url = `${JIOSAAVN_API_BASE_URL}?__call=webapi.get&token=${encodeURIComponent(token)}&type=artist&p=${p}&n_song=50&n_album=50&sub_type=${sub_type}&more=true&category=&sort_order=&includeMetaTags=0&ctx=${CTX}&api_version=${API_VERSION}&_format=json&_marker=0`;
+        } else {
+            // Initial request
+            url = `${JIOSAAVN_API_BASE_URL}?__call=webapi.get&token=${encodeURIComponent(token)}&type=artist&p=${p}&n_song=50&n_album=50&sub_type=&category=&sort_order=&includeMetaTags=0&ctx=${CTX}&api_version=${API_VERSION}&_format=json&_marker=0`;
+        }
+
+        const artistDetails = await makeApiRequest(url, language);
+        res.json(artistDetails);
+    } catch (error) {
+        res.status(500).json({ error: error.message || "An error occurred" });
+    }
+};
+
 exports.getMediaUrl = async (req, res) => {
     try {
         const { id, urlid } = req.params;

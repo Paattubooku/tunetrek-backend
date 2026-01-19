@@ -15,6 +15,7 @@ router.get("/search/albums/:query", musicController.searchAlbums);
 router.get("/album/:id", musicController.getAlbumDetails);
 router.get("/search/playlists/:query", musicController.searchPlaylists);
 router.get("/playlist/:id", musicController.getPlaylistDetails);
+router.get("/artist/:token", musicController.artistMoreDetails);
 router.get("/mediaURL/:id/:urlid", musicController.getMediaUrl);
 
 // Radio Routes
