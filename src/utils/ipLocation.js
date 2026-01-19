@@ -41,8 +41,14 @@ const getDefaultLocation = (ip) => {
 
 // Format location for JioSaavn cookie
 const formatLocationForCookie = (location) => {
-    // Format: IP%2CCountryCode%2CState%2CCity%2CPostalCode
-    const geo = `${location.ip}%2C${location.countryCode}%2C${encodeURIComponent(location.state)}%2C${encodeURIComponent(location.city)}%2C${location.postalCode}`;
+    // JioSaavn format: IP,CountryCode,State,City,PostalCode
+    // Note: IP uses colons (:) not %2C, other fields use %2C
+    // Example: 2401:4900:1cc9:726c:9169:9be2:ba46:b240%2CIN%2CTamil%20Nadu%2CChennai%2C600009
+
+    // Replace dots with colons for IP (to mimic IPv6-like format)
+    const ipFormatted = location.ip.replace(/\./g, ':');
+
+    const geo = `${ipFormatted}%2C${location.countryCode}%2C${encodeURIComponent(location.state)}%2C${encodeURIComponent(location.city)}%2C${location.postalCode}`;
     const latlong = `${location.latitude}%2C${location.longitude}`;
 
     return { geo, latlong };
