@@ -328,3 +328,29 @@ exports.getMediaUrl = async (req, res) => {
         res.status(500).json({ error: error.message || error });
     }
 };
+
+exports.debugLocation = async (req, res) => {
+    try {
+        // Get user's real IP address
+        const userIP = req.headers['x-forwarded-for']?.split(',')[0]?.trim() ||
+            req.headers['x-real-ip'] ||
+            req.socket?.remoteAddress ||
+            '0.0.0.0';
+
+        // Get location from IP
+        const locationData = await getLocationFromIP(userIP);
+        const location = formatLocationForCookie(locationData);
+
+        res.json({
+            detectedIP: userIP,
+            headers: {
+                'x-forwarded-for': req.headers['x-forwarded-for'],
+                'x-real-ip': req.headers['x-real-ip'],
+            },
+            locationData: locationData,
+            formattedForCookie: location
+        });
+    } catch (error) {
+        res.status(500).json({ error: error.message || "An error occurred" });
+    }
+};
