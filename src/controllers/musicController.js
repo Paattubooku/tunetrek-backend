@@ -1,4 +1,4 @@
-const { makeApiRequest, sendStatsEvent } = require("../utils/api");
+const { makeApiRequest } = require("../utils/api");
 const { createDownloadLinks } = require("../utils/crypto");
 const { JIOSAAVN_API_BASE_URL, CTX, API_VERSION } = require("../config");
 const { getLocationFromIP, formatLocationForCookie, getLanguagesForLocation } = require("../utils/ipLocation");
@@ -184,27 +184,6 @@ exports.search = async (req, res) => {
     } catch (error) {
         console.error('Error searching:', error);
         res.status(500).json({ error: 'An error occurred while fetching data' });
-    }
-};
-
-exports.getTopSearches = async (req, res) => {
-    try {
-        const { language = "tamil,english" } = req.query;
-        // Get user's real IP address
-        const userIP = req.headers['x-forwarded-for']?.split(',')[0]?.trim() ||
-            req.headers['x-real-ip'] ||
-            req.socket?.remoteAddress ||
-            '0.0.0.0';
-
-        // Get location from IP
-        const locationData = await getLocationFromIP(userIP);
-        const location = formatLocationForCookie(locationData);
-
-        const url = `${JIOSAAVN_API_BASE_URL}?__call=content.getTopSearches&ctx=${CTX}&api_version=${API_VERSION}&_format=json&_marker=0`;
-        const response = await makeApiRequest(url, language, location);
-        res.json(response);
-    } catch (error) {
-        res.status(500).json({ error: "An error occurred" });
     }
 };
 
