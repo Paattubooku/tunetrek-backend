@@ -13,6 +13,8 @@ app.use(express.json({ limit: '50mb' })); // Increased limit for large playlist/
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
 app.use(cors({
     origin: [
+        'https://*.repl.co',
+        'https://*.replit.dev',
         'http://localhost:5173',
         'http://localhost:3000',
         'https://mserver-pi.vercel.app/',
