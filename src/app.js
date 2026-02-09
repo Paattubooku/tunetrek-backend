@@ -13,6 +13,7 @@ app.use(express.json({ limit: '50mb' })); // Increased limit for large playlist/
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
 app.use(cors({
     origin: [
+        'https://bdb9ec98-b4a0-4517-ac41-30fb914b556a-00-302966irvgxk9.sisko.replit.dev/login',
         'https://*.repl.co',
         'https://*.replit.dev',
         'http://localhost:5173',
